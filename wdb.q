@@ -13,6 +13,7 @@ append:{[t;data]
         / clear buffer
         @[`.;t;0#]; 
         ]}
+        
 upd:append
 
 disksort:{[t;c;a] 
@@ -22,9 +23,6 @@ disksort:{[t;c;a]
             if[not$[(0,-1+count ii)~(first;last)@\:ii;@[{`s#x;1b};ii;0b];0b];
                 {v:get y;if[not$[all(fv:first v)~/:256#v;all fv~/:v;0b];v[x]:v;y set v];}[ii]each` sv't,'get` sv t,`.d]];
         @[t;first c;a]];t}
-
-/ get the ticker plant and history ports, defaults are 5010,5012
-.u.x:.z.x,(count .z.x)_(":5010";":5012")
 
 .u.end:{ / end of day: save, clear, sort on disk, move, hdb reload
     t:tables`.;t@:where 11h=type each t@\:`sym;
@@ -40,7 +38,10 @@ disksort:{[t;c;a]
     / reset TMPSAVE for new day
     TMPSAVE::getTMPSAVE .z.d;	
     / and notify hdb to reload and pick up new partition
-    if[h:@[hopen;`$":",.u.x 1;0];h"\\l .";hclose h];	
+    $[null h:.ipc.conn`$HDB;
+        .log.warn "Could not connect to ",HDB," to initiate reload";
+        [.log.info "Initiating reload on ",HDB;
+         h"\\l ."]];	
     }
 
 .z.exit:{ / unexpected exit: clear, wipe TMPSAVE contents (doesn't rm the directory itself)
@@ -52,9 +53,8 @@ disksort:{[t;c;a]
         {.[` sv TMPSAVE,x,`;();:;.Q.en[`:.]`. x]}each t;
         ]}
 
-/ init schema and sync up from log file;cd to hdb (so client save can run)
-.u.rep:{(.[;();:;].)each x;if[null first y;:()];-11!y;}
-/ HARDCODE \cd if other than logdir/db
-
 / connect to ticker plant for (schema;(logcount;log))
-.u.rep .(hopen `$":",.u.x 0)"(.u.sub[`;`];`.u `i`L)"
+if[.qi.isproc;
+    if[(::)~HDB:.proc.self.options`hdb;
+        '"A wdb process needs a hdb entry in its process config"];
+    .proc.replay .proc.subscribe`];
