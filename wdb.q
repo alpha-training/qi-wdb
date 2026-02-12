@@ -3,7 +3,7 @@
 getTMPSAVE:{`$":../tmp.",(string .z.i),".",string x}  
 TMPSAVE:getTMPSAVE .z.d
 MAXROWS:100000
-KEEPONEXIT:any`keeponexit`koe in key .Q.opt .z.x
+KEEPONEXIT:any`keeponexit`koe in key .qi.opts
 
 append:{[t;data]
     t insert data;
