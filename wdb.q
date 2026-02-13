@@ -1,14 +1,17 @@
 / adapted from https://github.com/simongarland/tick/blob/master/w.q
+.qi.import`event
+.qi.import`cron
 \e 1
-
 KEEPONEXIT:any`keeponexit`koe in key .Q.opt .z.x
-getTMPPATH:hsym`$$[`tmpPath in key .conf;.conf.tmpPath;.conf.DATA,"/tmp"],"/tmp.",string[.z.i],".",string@
+getTMPPATH:{hsym`$$[`tmpPath in key .conf;.conf.tmpPath;.conf.DATA,"/tmp"],"/wdb.",string[.z.i],".",string x}
 TMPPATH:getTMPPATH .z.d
 maketmp:{.[` sv TMPPATH,x,`;();,;.Q.en[TMPPATH]`. x]}
+writeall:{maketmp t:tables`;@[`.;t;0#]}
+memcheck:{if[.conf.WDB_MAXMB<first system["w"]%1024*1024;maketmp t:tables`;@[`.;t;0#];]}
 
 append:{[t;data]
     t insert data;
-    if[.conf.maxrows<count get t;maketmp t;@[`.;t;0#];]
+    if[.conf.WDB_MAXMB<first system["w"]%1024*1024;maketmp t;@[`.;t;0#];] / if[.conf.MAXROWS<count get t;maketmp t;@[`.;t;0#];]]
  }
 upd:append
 
@@ -49,3 +52,8 @@ if[.qi.isproc;
     if[(::)~HDB:.proc.self.options`hdb;
         '"A wdb process needs a hdb entry in its process config"];
     .proc.replay .proc.subscribe`];
+
+.cron.add[`writeall;.z.p;"n"$.conf.WRITE_EVERY]
+.cron.add[`memcheck;.z.p;0D00:00:01]
+.event.addhandler[`.z.ts;`.cron.run]
+\t 1000
