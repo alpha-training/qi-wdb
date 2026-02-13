@@ -6,12 +6,12 @@ KEEPONEXIT:any`keeponexit`koe in key .Q.opt .z.x
 getTMPPATH:{hsym`$$[`tmpPath in key .conf;.conf.tmpPath;.conf.DATA,"/tmp"],"/wdb.",string[.z.i],".",string x}
 TMPPATH:getTMPPATH .z.d
 maketmp:{.[` sv TMPPATH,x,`;();,;.Q.en[TMPPATH]`. x]}
-writeall:{maketmp t:tables`;@[`.;t;0#]}
+writeall:{-1"moving tables out of memory and onto disk at: ",(8# 2_string .z.n)," UKT";maketmp t:tables`;@[`.;t;0#]}
 memcheck:{if[.conf.WDB_MAXMB<first system["w"]%1024*1024;maketmp t:tables`;@[`.;t;0#];]}
 
 append:{[t;data]
     t insert data;
-    if[.conf.WDB_MAXMB<first system["w"]%1024*1024;maketmp t;@[`.;t;0#];] / if[.conf.MAXROWS<count get t;maketmp t;@[`.;t;0#];]]
+     if[.conf.MAXROWS<count get t;maketmp t;@[`.;t;0#];]
  }
 upd:append
 
