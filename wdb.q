@@ -1,43 +1,39 @@
 / adapted from https://github.com/simongarland/tick/blob/master/w.q
+\e 1
 
-getTMPSAVE:{`$":../tmp.",(string .z.i),".",string x}  
+getTMPSAVE:`$"/tmp.",string[.z.i],".",string@  
 TMPSAVE:getTMPSAVE .z.d
 MAXROWS:100000
 KEEPONEXIT:any`keeponexit`koe in key .Q.opt .z.x
+getTMPPATH:hsym`$$[`tmpPath in key .conf;.conf.tmpPath;raze .conf.DATA,"/tmp"],"/tmp.",string[.z.i],".",string@
+TMPPATH:getTMPPATH .z.d
+maketmp:{.[` sv TMPPATH,x,`;();,;.Q.en[TMPPATH]`. x]}
 
 append:{[t;data]
     t insert data;
-    if[MAXROWS<count value t;
-        / append enumerated buffer to disk
-        .[` sv TMPSAVE,t,`;();,;.Q.en[`:.]`. t]; 
-        / clear buffer
-        @[`.;t;0#]; 
-        ]}
-        
+    if[MAXROWS<count get t;maketmp t;@[`.;t;0#];]
+ }
 upd:append
 
-disksort:{[t;c;a] 
-    if[not`s~attr(t:hsym t)c;
-        if[count t;
-            ii:iasc iasc flip c!t c,:();
-            if[not$[(0,-1+count ii)~(first;last)@\:ii;@[{`s#x;1b};ii;0b];0b];
-                {v:get y;if[not$[all(fv:first v)~/:256#v;all fv~/:v;0b];v[x]:v;y set v];}[ii]each` sv't,'get` sv t,`.d]];
-        @[t;first c;a]];t}
+disksort:{[t;c;a]
+    if[not`s~attr(t:hsym t)c; / if its already sorted we skip everything (no need to sort a sorted list)
+        if[count t; / if the table is empty, there is nothing to sort
+            ii:iasc iasc flip c!t c,:(); / this tells you the index each number needs to go in order for the list to be sortedi
+            if[not$[(0,-1+count ii)~(first;last)@\:ii;@[{`s#x;1b};ii;0b];0b]; / if the first and last indices are 0&N-1. then it might be sorted. try to apply the sorted attribute 
+               {v:get y;if[not$[all(fv:first v)~/:256#v;all fv~/:v;0b];v[x]:v;y set v];}[ii]each` sv't,'get` sv t,`.d / on each column file within each tmp
+              ]
+          ];
+        @[t;first c;a] / apply the parted attribute on each sym col
+      ];t}
 
 .u.end:{ / end of day: save, clear, sort on disk, move, hdb reload
     t:tables`.;t@:where 11h=type each t@\:`sym;
-    / append enumerated buffer to disk
-    {.[` sv TMPSAVE,x,`;();,;.Q.en[`:.]`. x]}each t;
-    / clear buffer
+    maketmp each t;
     @[`.;t;0#];
-    / sort on disk by sym and set `p#
-    / {@[`sym xasc` sv TMPSAVE,x,`;`sym;`p#]}each t;
-    {disksort[` sv TMPSAVE,x,`;`sym;`p#]}each t;
-    / move the complete partition to final home, use <mv> instead of built-in <r> if filesystem whines
-    system"r ",(1_string TMPSAVE)," ",-1_1_string .Q.par[`:.;x;`];
-    / reset TMPSAVE for new day
-    TMPSAVE::getTMPSAVE .z.d;	
-    / and notify hdb to reload and pick up new partition
+    {disksort[` sv TMPPATH,x,`;`sym;`p#]}each t; /sort on disk by sym and set `p#
+    system"mv ",(1_string TMPPATH)," ",.conf.DATA,"/HDB/",string .z.d; / can change this for par.txt -1_1_string .Q.par[`:.;x;`];
+    TMPPATH::getTMPPATH .z.d;
+    .Q.gc`;	
     $[null h:.ipc.conn`$HDB;
         .log.warn "Could not connect to ",HDB," to initiate reload";
         [.log.info "Initiating reload on ",HDB;
@@ -50,7 +46,7 @@ disksort:{[t;c;a]
         / clear buffer                          
         @[`.;t;0#];
         / overwrite written-so-far-today data with empty
-        {.[` sv TMPSAVE,x,`;();:;.Q.en[`:.]`. x]}each t;
+        maketmp each t;
         ]}
 
 / connect to ticker plant for (schema;(logcount;log))
