@@ -1,17 +1,15 @@
 / adapted from https://github.com/simongarland/tick/blob/master/w.q
 \e 1
 
-getTMPSAVE:`$"/tmp.",string[.z.i],".",string@  
-TMPSAVE:getTMPSAVE .z.d
-MAXROWS:100000
 KEEPONEXIT:any`keeponexit`koe in key .Q.opt .z.x
 getTMPPATH:hsym`$$[`tmpPath in key .conf;.conf.tmpPath;raze .conf.DATA,"/tmp"],"/tmp.",string[.z.i],".",string@
 TMPPATH:getTMPPATH .z.d
 maketmp:{.[` sv TMPPATH,x,`;();,;.Q.en[TMPPATH]`. x]}
+KEEPONEXIT:any`keeponexit`koe in key .qi.opts
 
 append:{[t;data]
     t insert data;
-    if[MAXROWS<count get t;maketmp t;@[`.;t;0#];]
+    if[.conf.maxrows<count get t;maketmp t;@[`.;t;0#];]
  }
 upd:append
 
