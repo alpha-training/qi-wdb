@@ -2,10 +2,9 @@
 \e 1
 
 KEEPONEXIT:any`keeponexit`koe in key .Q.opt .z.x
-getTMPPATH:hsym`$$[`tmpPath in key .conf;.conf.tmpPath;raze .conf.DATA,"/tmp"],"/tmp.",string[.z.i],".",string@
+getTMPPATH:hsym`$$[`tmpPath in key .conf;.conf.tmpPath;.conf.DATA,"/tmp"],"/tmp.",string[.z.i],".",string@
 TMPPATH:getTMPPATH .z.d
 maketmp:{.[` sv TMPPATH,x,`;();,;.Q.en[TMPPATH]`. x]}
-KEEPONEXIT:any`keeponexit`koe in key .qi.opts
 
 append:{[t;data]
     t insert data;
@@ -40,10 +39,8 @@ disksort:{[t;c;a]
 
 .z.exit:{ / unexpected exit: clear, wipe TMPSAVE contents (doesn't rm the directory itself)
     if[not KEEPONEXIT;
-        t:tables`.;t@:where 11h=type each t@\:`sym;
-        / clear buffer                          
+        t:tables`.;t@:where 11h=type each t@\:`sym;                          
         @[`.;t;0#];
-        / overwrite written-so-far-today data with empty
         maketmp each t;
         ]}
 
