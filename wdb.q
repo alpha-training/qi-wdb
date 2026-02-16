@@ -8,7 +8,7 @@ TMPPATH:gettmppath .z.d
 maketmp:{.[` sv TMPPATH,x,`;();,;.Q.en[TMPPATH]`. x]} / have a updtmp and clear function
 clear:{@[`.;tables`;0#]}
 writeandclear:{maketmp each t:tables`;clear`}
-writeall:{-1"moving tables out of memory and onto disk at: ",(8# 2_string .z.n)," UKT";writeandclear`}
+writeall:{-1"moving tables out of memory and onto disk at: ",(8#2_string .z.n)," UKT";writeandclear`}
 memcheck:{if[.conf.WDB_MAXMB<first system["w"]%1024*1024;writeandclear`]}
 
 append:{[t;data]
