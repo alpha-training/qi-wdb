@@ -5,11 +5,14 @@
 KOE:any`keeponexit`koe in key .qi.opts
 gettmppath:{hsym`$$[`tmpPath in key .conf;.conf.tmpPath;.conf.DATA,"/tmp"],"/wdb.",string[.z.i],".",string x}
 TMPPATH:gettmppath .z.d
-maketmp:{.[` sv TMPPATH,x,`;();,;.Q.en[TMPPATH]`. x]} / have a updtmp and clear function
-clear:{@[`.;tables`;0#]}
-writeandclear:{maketmp each t:tables`;clear`}
+HDBPATH:":",.conf.DATA,"/HDB/"
+partition:HDBPATH,string .z.d
+writetmp:{.[` sv TMPPATH,x,`;();,;.Q.en[`$HDBPATH]`. x]} / have a updtmp and clear function
+clearall:{@[`.;tables`;0#]}
+writeandclear:{writetmp each tables`;clearall`}
 writeall:{-1"moving tables out of memory and onto disk at: ",(8#2_string .z.n)," UKT";writeandclear`}
 memcheck:{if[.conf.WDB_MAXMB<first system["w"]%1024*1024;writeandclear`]}
+
 
 append:{[t;data]
     t insert data;
@@ -29,25 +32,22 @@ disksort:{[t;c;a]
       ];t}
 
 .u.end:{ / end of day: save, clear, sort on disk, move, hdb reload
-    t:tables`.;t@:where 11h=type each t@\:`sym;
-    maketmp each t;
-    @[`.;t;0#];
-    {disksort[` sv TMPPATH,x,`;`sym;`p#]}each t; /sort on disk by sym and set `p#
-    system"mv ",(1_string TMPPATH)," ",.conf.DATA,"/HDB/",string .z.d; / can change this for par.txt -1_1_string .Q.par[`:.;x;`];
+    writeandclear`;
+    {disksort[` sv TMPPATH,x,`;`sym;`p#]}each tables`; /sort on disk by sym and set `p#;
+    / if[not type key `$HDBPATH;system"rm -rf ",1_HDBPATH]; dont think i can have this line for obvious safety reasons
+    / Move the temp folder to become the date partition
+    system"mv ",(1_string TMPPATH)," ",1_HDBPATH; /can change this for par.txt -1_1_string .Q.par[`:.;x;`];
+    system "mv ",1_HDBPATH,(string last` vs TMPPATH)," ",1_partition;
     TMPPATH::gettmppath .z.d;
+    partition::HDBPATH,string .z.d
     .Q.gc`;	
     $[null h:.ipc.conn`$HDB;
         .log.warn "Could not connect to ",HDB," to initiate reload";
         [.log.info "Initiating reload on ",HDB;
          h"\\l ."]];	
-    }
+    } / need some pattern matching to do for each wdb file like .z.d. what if wdb goes down and we join back in on the day
 
-.z.exit:{ / unexpected exit: clear, wipe TMPSAVE contents (doesn't rm the directory itself)
-    if[not KOE;
-        t:tables`.;t@:where 11h=type each t@\:`sym;                          
-        maketmp each t;
-        @[`.;t;0#];
-        ]}
+.z.exit:{if[not KOE;writeandclear`]} / unexpected exit: clear, wipe TMPSAVE contents (doesn't rm the directory itself)
 
 / connect to ticker plant for (schema;(logcount;log))
 if[.qi.isproc;
