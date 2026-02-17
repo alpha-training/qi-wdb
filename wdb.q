@@ -14,8 +14,8 @@ writeall:{-1"moving tables out of memory and onto disk at: ",(8#2_string .z.n),"
 memcheck:{if[.conf.WDB_MAXMB<first system["w"]%1024*1024;writeandclear`]}
 
 append:{[t;data]
-    t insert data;
-     if[.conf.MAXROWS<count get t;writeandclear`]
+    if[t in tables`;t insert data;
+     if[.conf.MAXROWS<count get t;writeandclear`]]
  }
 
 upd:append
@@ -39,7 +39,7 @@ disksort:{[t;c;a]
     system"mv ",(1_string TMPPATH)," ",1_HDBPATH; /can change this for par.txt -1_1_string .Q.par[`:.;x;`];
     system "mv ",1_HDBPATH,(string last` vs TMPPATH)," ",1_partition;
     TMPPATH::gettmppath .z.d;
-    partition::HDBPATH,string .z.d
+    partition::HDBPATH,string .z.d;
     .Q.gc`;	
     $[null h:.ipc.conn`$HDB;
         .log.warn "Could not connect to ",HDB," to initiate reload";
