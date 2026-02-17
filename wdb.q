@@ -13,11 +13,11 @@ writeandclear:{writetmp each tables`;clearall`}
 writeall:{-1"moving tables out of memory and onto disk at: ",(8#2_string .z.n)," UKT";writeandclear`}
 memcheck:{if[.conf.WDB_MAXMB<first system["w"]%1024*1024;writeandclear`]}
 
-
 append:{[t;data]
     t insert data;
      if[.conf.MAXROWS<count get t;writeandclear`]
  }
+
 upd:append
 
 disksort:{[t;c;a]
@@ -50,12 +50,12 @@ disksort:{[t;c;a]
 .z.exit:{if[not KOE;writeandclear`]} / unexpected exit: clear, wipe TMPSAVE contents (doesn't rm the directory itself)
 
 / connect to ticker plant for (schema;(logcount;log))
-if[.qi.isproc;
+.wdb.init:{
     if[(::)~HDB:.proc.self.options`hdb;
         '"A wdb process needs a hdb entry in its process config"];
-    .proc.replay .proc.subscribe`];
-
-.cron.add[`writeall;.z.p;"n"$.conf.WRITE_EVERY]
-.cron.add[`memcheck;.z.p;"n"$.conf.MEM_CHECK_EVERY]
-.event.addhandler[`.z.ts;`.cron.run]
-\t .conf.QTIMER
+    .proc.replay .proc.subscribe`;
+    .cron.add[`writeall;.z.p;"n"$.conf.WRITE_EVERY];
+    .cron.add[`memcheck;.z.p;"n"$.conf.MEM_CHECK_EVERY];
+    .event.addhandler[`.z.ts;`.cron.run];
+    .cron.start[];
+    }
