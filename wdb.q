@@ -12,7 +12,7 @@ clearall:{@[`.;tables`;0#]}
 writeandclear:{writetmp each tables`;clearall`}
 writeall:{-1"moving tables out of memory and onto disk at: ",(8#2_string .z.n)," UKT";writeandclear`}
 memcheck:{if[.conf.WDB_MAXMB<first system["w"]%1024*1024;writeandclear`]}
-hdb:.qi.getconf[`hdb;"hdb"]
+HDB:.qi.getconf[`hdb;"hdb"]
 
 append:{[t;data]
     if[t in tables`;t insert data;
@@ -35,7 +35,8 @@ disksort:{[t;c;a]
 .u.end:{ / end of day: save, clear, sort on disk, move, hdb reload
     writeandclear`;
     {disksort[` sv TMPPATH,x,`;`sym;`p#]}each tables`; /sort on disk by sym and set `p#;
-    system.qi.mv," ",(1_string TMPPATH)," ",1_partition;
+    if[not`s~attr key 1_partition;system"mkdir ",1_partition];
+    system .qi.mv," ",(1_string TMPPATH),"/* ",1_partition;
     TMPPATH::gettmppath .z.d;
     partition::HDBPATH,string .z.d;
     .Q.gc`;	
@@ -57,3 +58,7 @@ disksort:{[t;c;a]
     .event.addhandler[`.z.ts;`.cron.run];
     .cron.start[];
  }
+
+
+/
+{x set .Q.en[y;z]}[;`$":",.conf.DATA,"/HDB";]'[`$(partition,"/"),/:(string key TMPPATH),\:"/";get get TMPPATH];
