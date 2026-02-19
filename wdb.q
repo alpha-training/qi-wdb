@@ -12,6 +12,7 @@ clearall:{@[`.;tables`;0#]}
 writeandclear:{writetmp each tables`;clearall`}
 writeall:{-1"moving tables out of memory and onto disk at: ",(8#2_string .z.n)," UKT";writeandclear`}
 memcheck:{if[.conf.WDB_MAXMB<first system["w"]%1024*1024;writeandclear`]}
+hdb:.qi.getconf[`hdb;"hdb"]
 
 append:{[t;data]
     if[t in tables`;t insert data;
@@ -34,10 +35,7 @@ disksort:{[t;c;a]
 .u.end:{ / end of day: save, clear, sort on disk, move, hdb reload
     writeandclear`;
     {disksort[` sv TMPPATH,x,`;`sym;`p#]}each tables`; /sort on disk by sym and set `p#;
-    / if[not type key `$HDBPATH;system"rm -rf ",1_HDBPATH]; dont think i can have this line for obvious safety reasons
-    / Move the temp folder to become the date partition
-    system"mv ",(1_string TMPPATH)," ",1_HDBPATH; /can change this for par.txt -1_1_string .Q.par[`:.;x;`];
-    system "mv ",1_HDBPATH,(string last` vs TMPPATH)," ",1_partition;
+    system.qi.mv," ",(1_string TMPPATH)," ",1_partition;
     TMPPATH::gettmppath .z.d;
     partition::HDBPATH,string .z.d;
     .Q.gc`;	
@@ -47,15 +45,15 @@ disksort:{[t;c;a]
          h"\\l ."]];	
     } / need some pattern matching to do for each wdb file like .z.d. what if wdb goes down and we join back in on the day
 
-.z.exit:{if[not KOE;writeandclear`]} / unexpected exit: clear, wipe TMPSAVE contents (doesn't rm the directory itself)
+.z.exit:{if[not KOE;writeandclear`]} 
 
 / connect to ticker plant for (schema;(logcount;log))
 .wdb.init:{
     if[(::)~HDB:.proc.self.options`hdb;
         '"A wdb process needs a hdb entry in its process config"];
     .proc.replay .proc.subscribe`;
-    .cron.add[`writeall;.z.p;"n"$.conf.WRITE_EVERY];
-    .cron.add[`memcheck;.z.p;"n"$.conf.MEM_CHECK_EVERY];
+    .cron.add[`writeall;.z.p;.conf.WRITE_EVERY];
+    .cron.add[`memcheck;.z.p;.conf.MEM_CHECK_EVERY];
     .event.addhandler[`.z.ts;`.cron.run];
     .cron.start[];
-    }
+ }
