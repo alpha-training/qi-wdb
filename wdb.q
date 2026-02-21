@@ -41,8 +41,8 @@ disksort:{[t;c;a]
     partition::HDBPATH,string .z.d;
     .Q.gc`;	
     $[null h:.ipc.conn`$HDB;
-        .log.warn "Could not connect to ",HDB," to initiate reload";
-        [.log.info "Initiating reload on ",HDB;
+        .qi.warn "Could not connect to ",HDB," to initiate reload";
+        [.qi.info "Initiating reload on ",HDB;
          h"\\l ."]];	
     } / need some pattern matching to do for each wdb file like .z.d. what if wdb goes down and we join back in on the day
 
