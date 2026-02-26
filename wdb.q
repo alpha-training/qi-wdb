@@ -3,9 +3,9 @@
 .qi.import`cron
 
 KOE:any`keeponexit`koe in key .qi.opts
-gettmppath:{hsym`$$[`tmpPath in key .conf;.conf.tmpPath;.conf.DATA,"/tmp"],"/wdb.",string[.z.i],".",string x}
+gettmppath:{hsym`$.qi.ospath$[`tmpPath in key .conf;.conf.tmpPath;.conf.DATA,"/tmp"],"/wdb.",string[.z.i],".",string x}
 TMPPATH:gettmppath .z.d
-HDBPATH:":",.conf.DATA,"/HDB/"
+HDBPATH:":",.qi.ospath .conf.DATA,"/HDB/"
 partition:HDBPATH,string .z.d
 writetmp:{.[` sv TMPPATH,x,`;();,;.Q.en[`$HDBPATH]`. x]} / have a updtmp and clear function
 clearall:{@[`.;tables`;0#]}
@@ -35,13 +35,13 @@ disksort:{[t;c;a]
 .u.end:{ / end of day: save, clear, sort on disk, move, hdb reload
     writeandclear`;
     {disksort[` sv TMPPATH,x,`;`sym;`p#]}each tables`; /sort on disk by sym and set `p#;
-    if[not`s~attr key 1_partition;system"mkdir ",1_partition];
-    system .qi.mv," ",(1_string TMPPATH),"/* ",1_partition;
+    if[not`s~attr key t:.qi.ospath partition;.qi.os.ensuredir partition];
+    system .qi.mv," ",.qi.ospath[TMPPATH],"/* ",t;
     TMPPATH::gettmppath .z.d;
     partition::HDBPATH,string .z.d;
     .Q.gc`;	
     $[null h:.ipc.conn`$HDB;
-        .qi.warn "Could not connect to ",HDB," to initiate reload";
+        .qi.info "Could not connect to ",HDB," to initiate reload";
         [.qi.info "Initiating reload on ",HDB;
          h"\\l ."]];	
     } / need some pattern matching to do for each wdb file like .z.d. what if wdb goes down and we join back in on the day
