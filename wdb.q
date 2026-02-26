@@ -3,9 +3,9 @@
 .qi.import`cron
 
 KOE:any`keeponexit`koe in key .qi.opts
-gettmppath:{hsym`$.qi.ospath$[`tmpPath in key .conf;.conf.tmpPath;.conf.DATA,"/tmp"],"/wdb.",string[.z.i],".",string x}
+gettmppath:{hsym`$$[`tmpPath in key .conf;.conf.tmpPath;.conf.DATA,"/tmp"],"/wdb.",string[.z.i],".",string x}
 TMPPATH:gettmppath .z.d
-HDBPATH:":",.qi.ospath .conf.DATA,"/HDB/"
+HDBPATH:":",.conf.DATA,"/HDB/"
 partition:HDBPATH,string .z.d
 writetmp:{.[` sv TMPPATH,x,`;();,;.Q.en[`$HDBPATH]`. x]} / have a updtmp and clear function
 clearall:{@[`.;tables`;0#]}
