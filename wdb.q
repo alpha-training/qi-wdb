@@ -35,7 +35,7 @@ disksort:{[t;c;a]
 
 .u.end:{ / end of day: save, clear, sort on disk, move, hdb reload
     writeandclear`;
-    {disksort[` sv TMPPATH,x,`;`sym;`p#]}each tables`; /sort on disk by sym and set `p#;
+    {disksort[` sv TMPPATH,x,`;`sym;`p#]}each key TMPPATH; /sort on disk by sym and set `p#;
     if[not`s~attr key t:.qi.ospath partition;.qi.os.ensuredir partition];
     .qi.os.mv[TMPPATH,"/*";t];
     TMPPATH::gettmppath .z.d;
