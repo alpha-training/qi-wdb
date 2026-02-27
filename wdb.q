@@ -9,7 +9,7 @@ HDBPATH:":",.conf.DATA,"/HDB/"
 partition:HDBPATH,string .z.d
 writetmp:{.[` sv TMPPATH,x,`;();,;.Q.en[`$HDBPATH]`. x]} / have a updtmp and clear function
 clearall:{@[`.;tables`;0#]}
-writeandclear:{writetmp each tables`;clearall`}
+writeandclear:{writetmp each (tables`)where 0<count each get each tables`;clearall`}
 writeall:{-1"moving tables out of memory and onto disk at: ",(8#2_string .z.n)," UKT";writeandclear`}
 memcheck:{if[.conf.WDB_MAXMB<first system["w"]%1024*1024;writeandclear`]}
 HDB:.qi.getconf[`hdb;"hdb"]
