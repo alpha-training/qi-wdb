@@ -37,7 +37,7 @@ disksort:{[t;c;a]
     writeandclear`;
     {disksort[` sv TMPPATH,x,`;`sym;`p#]}each tables`; /sort on disk by sym and set `p#;
     if[not`s~attr key t:.qi.ospath partition;.qi.os.ensuredir partition];
-    system .qi.mv," ",.qi.ospath[TMPPATH],"/* ",t;
+    .qi.os.mv[TMPPATH,"/*";t];
     TMPPATH::gettmppath .z.d;
     partition::HDBPATH,string .z.d;
     .Q.gc`;	
