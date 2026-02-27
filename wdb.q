@@ -16,7 +16,8 @@ HDB:.qi.getconf[`hdb;"hdb"]
 
 append:{[t;data]
     if[t in tables`;t insert data;
-     if[.conf.MAXROWS<count get t;writeandclear`]]
+    if[not`g=attr get[t]`sym;update`g#sym from t];
+    if[.conf.MAXROWS<count get t;writeandclear`]]
  }
 
 upd:append
