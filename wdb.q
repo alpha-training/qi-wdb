@@ -6,12 +6,12 @@ KOE:any`keeponexit`koe in key .qi.opts
 gettmppath:{hsym`$$[`tmpPath in key .conf;.conf.tmpPath;.conf.DATA,"/tmp"],"/wdb.",string[.z.i],".",string x}
 TMPPATH:gettmppath .z.d
 HDBPATH:":",.conf.DATA,"/HDB/"
-partition:HDBPATH,string .z.d
+PARTITION:HDBPATH,string .z.d
 writetmp:{.[` sv TMPPATH,x,`;();,;.Q.en[`$HDBPATH]`. x]} / have a updtmp and clear function
 clearall:{@[`.;tables`;0#]}
 writeandclear:{writetmp each (tables`)where 0<count each get each tables`;clearall`}
-writeall:{-1"moving tables out of memory and onto disk at: ",(8#2_string .z.n)," UTC";writeandclear`}
-memcheck:{if[.conf.WDB_MAXMB<first system["w"]%1024*1024;writeandclear`]}
+writeall:{.qi.info"moving tables out of memory and onto disk at: ",(8#2_string .z.n)," UTC";writeandclear`}
+memcheck:{if[(1024*1024*.conf.WDB_MAXMB)<.Q.w[]`used;writeandclear`]}
 HDB:.qi.getconf[`hdb;"hdb"]
 
 append:{[t;data]
@@ -25,7 +25,7 @@ upd:append
 disksort:{[t;c;a]
     if[not`s~attr(t:hsym t)c; / if its already sorted we skip everything (no need to sort a sorted list)
         if[count t; / if the table is empty, there is nothing to sort
-            ii:iasc iasc flip c!t c,:(); / this tells you the index each number needs to go in order for the list to be sortedi
+            ii:iasc iasc flip c!t c,:(); / this tells you the index each number needs to go in order for the list to be sorted
             if[not$[(0,-1+count ii)~(first;last)@\:ii;@[{`s#x;1b};ii;0b];0b]; / if the first and last indices are 0&N-1. then it might be sorted. try to apply the sorted attribute 
                {v:get y;if[not$[all(fv:first v)~/:256#v;all fv~/:v;0b];v[x]:v;y set v];}[ii]each` sv't,'get` sv t,`.d / on each column file within each tmp
               ]
@@ -36,10 +36,10 @@ disksort:{[t;c;a]
 .u.end:{ / end of day: save, clear, sort on disk, move, hdb reload
     writeandclear`;
     {disksort[` sv TMPPATH,x,`;`sym;`p#]}each key TMPPATH; /sort on disk by sym and set `p#;
-    if[not`s~attr key t:.qi.ospath partition;.qi.os.ensuredir partition];
+    if[not`s~attr key t:.qi.ospath PARTITION;.qi.os.ensuredir PARTITION];
     .qi.os.mv[TMPPATH,"/*";t];
     TMPPATH::gettmppath .z.d;
-    partition::HDBPATH,string .z.d;
+    PARTITION::HDBPATH,string .z.d;
     .Q.gc`;	
     $[null h:.ipc.conn`$HDB;
         .qi.info "Could not connect to ",HDB," to initiate reload";
