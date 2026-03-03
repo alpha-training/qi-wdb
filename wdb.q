@@ -53,7 +53,7 @@ disksort:{[t;c;a]
 .wdb.init:{
     if[(::)~HDB:.proc.self.options`hdb;
         '"A wdb process needs a hdb entry in its process config"];
-    .proc.replay .proc.subscribe`;
+    .proc.subinitreplay[];
     .cron.add[`writeall;.z.p;.conf.WRITE_EVERY];
     .cron.add[`memcheck;.z.p;.conf.MEM_CHECK_EVERY];
     .event.addhandler[`.z.ts;`.cron.run];
