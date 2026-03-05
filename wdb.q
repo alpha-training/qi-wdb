@@ -3,16 +3,13 @@
 .qi.import`cron
 
 KOE:any`keeponexit`koe in key .qi.opts
-gettmppath:{hsym`$$[`tmpPath in key .conf;.conf.tmpPath;.conf.DATA,"/tmp"],"/wdb.",string[.z.i],".",string x}
+gettmppath:{.qi.path(.qi.getconf[`tmpPath;.conf.DATA,"/tmp"];"wdb_",string[.z.i],"_",.qi.tostr[x]except".")}
 TMPPATH:gettmppath .z.d
-HDBPATH:":",.conf.DATA,"/HDB/"
-PARTITION:HDBPATH,string .z.d
-writetmp:{.[` sv TMPPATH,x,`;();,;.Q.en[`$HDBPATH]`. x]} / have a updtmp and clear function
+writetmp:{.[.qi.path(TMPPATH;x;`);();,;.Q.en[.qi.path .conf.HDB]`. x]} / have a updtmp and clear function
 clearall:{@[`.;tables`;0#]}
-writeandclear:{writetmp each (tables`)where 0<count each get each tables`;clearall`}
+writeandclear:{writetmp each a where 0<(count get@)each a:tables`;clearall`}
 writeall:{.qi.info"moving tables out of memory and onto disk at: ",(8#2_string .z.n)," UTC";writeandclear`}
 memcheck:{if[(1024*1024*.conf.WDB_MAXMB)<.Q.w[]`used;writeandclear`]}
-HDB:.qi.getconf[`hdb;"hdb"]
 
 append:{[t;data]
     if[t in tables`;t insert data;
@@ -35,15 +32,16 @@ disksort:{[t;c;a]
 
 .u.end:{ / end of day: save, clear, sort on disk, move, hdb reload
     writeandclear`;
-    {disksort[` sv TMPPATH,x,`;`sym;`p#]}each key TMPPATH; /sort on disk by sym and set `p#;
-    if[not`s~attr key t:.qi.ospath PARTITION;.qi.os.ensuredir PARTITION];
-    .qi.os.mv[TMPPATH,"/*";t];
+    {disksort[.qi.path(TMPPATH;x;`);`sym;`p#]}each key TMPPATH; /sort on disk by sym and set `p#;
+    /if[not`s~attr key t:.qi.ospath PARTITION;.qi.os.ensuredir PARTITION];
+    .qi.os.ensuredir p:.qi.path(.conf.HDB;x);
+    .qi.os.mv[.qi.ospath(TMPPATH;"*");p];
     TMPPATH::gettmppath .z.d;
-    PARTITION::HDBPATH,string .z.d;
+    /::HDBPATH,string .z.d;
     .Q.gc`;	
-    $[null h:.ipc.conn`$HDB;
-        .qi.info "Could not connect to ",HDB," to initiate reload";
-        [.qi.info "Initiating reload on ",HDB;
+    $[null h:.ipc.conn HDB;
+        .qi.info "Could not connect to ",string[HDB]," to initiate reload";
+        [.qi.info "Initiating reload on ",string HDB;
          h"\\l ."]];	
     } / need some pattern matching to do for each wdb file like .z.d. what if wdb goes down and we join back in on the day
 
@@ -51,8 +49,9 @@ disksort:{[t;c;a]
 
 / connect to ticker plant for (schema;(logcount;log))
 .wdb.init:{
-    if[(::)~HDB:.proc.self.options`hdb;
+    if[(::)~HDB::.qi.tosym .proc.self.options`hdb;
         '"A wdb process needs a hdb entry in its process config"];
+    if[null .proc.self.mystack[HDB;`pkg];show .proc.self.mystack;'string[HDB]," not found"];
     .proc.subinitreplay[];
     .cron.add[`writeall;.z.p;.conf.WRITE_EVERY];
     .cron.add[`memcheck;.z.p;.conf.MEM_CHECK_EVERY];
