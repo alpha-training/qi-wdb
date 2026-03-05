@@ -7,7 +7,7 @@ gettmppath:{.qi.path(.qi.getconf[`tmpPath;.conf.DATA,"/tmp"];"wdb_",string[.z.i]
 TMPPATH:gettmppath .z.d
 writetmp:{.[.qi.path(TMPPATH;x;`);();,;.Q.en[.qi.path .conf.HDB]`. x]} / have a updtmp and clear function
 clearall:{@[`.;tables`;0#]}
-writeandclear:{writetmp each a where 0<(count get@)each a:tables`;clearall`}
+writeandclear:{writetmp each a where 0<(count get@)each a:tables`;clearall`;.qi.info"flushed ",string[count a]," table(s) to disk"}
 writeall:{.qi.info"moving tables out of memory and onto disk at: ",(8#2_string .z.n)," UTC";writeandclear`}
 memcheck:{if[(1024*1024*.conf.WDB_MAXMB)<.Q.w[]`used;writeandclear`]}
 
