@@ -4,10 +4,13 @@
 
 KOE:any`keeponexit`koe in key .qi.opts
 gettmppath:{.qi.path(.qi.getconf[`tmpPath;.conf.DATA,"/tmp"];"wdb_",string[.z.i],"_",.qi.tostr[x]except".")}
+getsymenumpath:{.qi.path(.qi.getconf[`tmpPath;.conf.DATA,"/tmp"];"symenum_",string[.z.i],"_",.qi.tostr[x]except".")}
 TMPPATH:gettmppath .z.d
-writetmp:{.[.qi.path(TMPPATH;x;`);();,;.Q.en[.qi.path .conf.HDB]`. x]} / have a updtmp and clear function
+SYMENUMPATH:getsymenumpath .z.d
+SYMBACKUPDIR:.qi.getconf[`symBackupDir;.conf.DATA,"/symbackups"]
+writetmp:{.[.qi.path(TMPPATH;x;`);();,;.Q.en[SYMENUMPATH]`. x]}
 clearall:{@[`.;tables`;0#]}
-writeandclear:{writetmp each a where 0<(count get@)each a:tables`;clearall`;.qi.info"flushed ",string[count a]," table(s) to disk"}
+writeandclear:{writetmp each t:a where 0<(count get@)each a:tables`;clearall`;.qi.info"flushed ",string[count t]," table(s) to disk"}
 writeall:{.qi.info"moving tables out of memory and onto disk at: ",(8#2_string .z.n)," UTC";writeandclear`}
 memcheck:{if[(1024*1024*.conf.WDB_MAXMB)<.Q.w[]`used;writeandclear`]}
 
@@ -30,28 +33,52 @@ disksort:{[t;c;a]
         @[t;first c;a] / apply the parted attribute on each sym col
       ];t}
 
-.u.end:{ / end of day: save, clear, sort on disk, move, hdb reload
+.u.end:{ / end of day: save, clear, sort on disk, backup sym, promote sym, move, hdb reload
     writeandclear`;
-    {disksort[.qi.path(TMPPATH;x;`);`sym;`p#]}each key TMPPATH; /sort on disk by sym and set `p#;
-    /if[not`s~attr key t:.qi.ospath PARTITION;.qi.os.ensuredir PARTITION];
+    {disksort[.qi.path(TMPPATH;x;`);`sym;`p#]}each key TMPPATH;
+    / backup HDB sym
+    hdbsym:.qi.path(.conf.HDB;"sym");
+    bkpdir:.qi.path(SYMBACKUPDIR;string x);
+    .qi.os.ensuredir bkpdir;
+    .qi.info"Backing up HDB sym to: ",.qi.ospath .qi.path(bkpdir;`sym.bkp);
+    if[count key hdbsym;
+        .qi.os.cpfile[hdbsym;.qi.path(bkpdir;`sym.bkp)]];
+    / promote working sym into HDB
+    .qi.info"Promoting updated sym to HDB";
+    .qi.os.ensuredir .qi.path .conf.HDB;
+    .qi.os.mv[.qi.ospath .qi.path(SYMENUMPATH;`sym);.qi.ospath hdbsym];
+    / move new partition into HDB
     .qi.os.ensuredir p:.qi.path(.conf.HDB;x);
     .qi.os.mv[.qi.ospath(TMPPATH;"*");p];
+    / clean up empty tmp dirs and roll globals for new day
+    hdel TMPPATH;
+    hdel SYMENUMPATH;
     TMPPATH::gettmppath .z.d;
-    /::HDBPATH,string .z.d;
-    .Q.gc`;	
+    SYMENUMPATH::getsymenumpath .z.d;
+    initsymenum[];
+    .Q.gc[];
     $[null h:.ipc.conn HDB;
         .qi.info "Could not connect to ",string[HDB]," to initiate reload";
         [.qi.info "Initiating reload on ",string HDB;
-         h"\\l ."]];	
-    } / need some pattern matching to do for each wdb file like .z.d. what if wdb goes down and we join back in on the day
+         h"\\l ."]];
+    }
 
 .z.exit:{if[not KOE;writeandclear`]} 
+
+
+initsymenum:{
+    .qi.os.ensuredir SYMENUMPATH;
+    hdbsym:.qi.path(.conf.HDB;"sym");
+    if[count key hdbsym;
+        .qi.os.cpfile[hdbsym;.qi.path(SYMENUMPATH;`sym)]];
+    }
 
 / connect to ticker plant for (schema;(logcount;log))
 .wdb.init:{
     if[(::)~HDB::.qi.tosym .proc.self.options`hdb;
         '"A wdb process needs a hdb entry in its process config"];
     if[null .proc.self.mystack[HDB;`pkg];show .proc.self.mystack;'string[HDB]," not found"];
+    initsymenum[];
     .proc.subinitreplay[];
     .cron.add[`writeall;.z.p;.conf.WRITE_EVERY];
     .cron.add[`memcheck;.z.p;.conf.MEM_CHECK_EVERY];
