@@ -65,7 +65,6 @@ disksort:{[t;c;a]
 
 .z.exit:{if[not KOE;writeandclear`]} 
 
-
 initsymenum:{
     .qi.os.ensuredir SYMENUMPATH;
     hdbsym:.qi.path(.conf.HDB;"sym");
