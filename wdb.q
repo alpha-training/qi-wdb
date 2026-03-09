@@ -60,7 +60,7 @@ disksort:{[t;c;a]
     $[null h:.ipc.conn HDB;
         .qi.info "Could not connect to ",string[HDB]," to initiate reload";
         [.qi.info "Initiating reload on ",string HDB;
-         h"\\l ."]];
+         h"reload[]"]];
     }
 
 .z.exit:{if[not KOE;writeandclear`]} 
