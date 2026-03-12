@@ -34,20 +34,19 @@ disksort:{[t;c;a]
     writeandclear`;
     {disksort[.qi.path(TMPPATH;x;`);`sym;`p#]}each key TMPPATH;
     / backup HDB sym
-    bkpdir:.qi.path(SYMBACKUPDIR;string x);
-    .qi.os.ensuredir bkpdir;
+    .qi.os.ensuredir bkpdir:.qi.path(SYMBACKUPDIR;string x);
     .qi.info"Backing up HDB sym to: ",.qi.ospath .qi.path(bkpdir;`sym.bkp);
     if[.qi.exists hdbsym:.qi.path(.wdb.hdb_dir;"sym");
         .qi.os.cpfile[hdbsym;.qi.path(bkpdir;`sym.bkp)]];
     / promote working sym into HDB
     .qi.info"Promoting updated sym to HDB";
-    .qi.os.ensuredir .qi.path .wdb.hdb_dir;
+    .qi.os.ensuredir .wdb.hdb_dir;
     .qi.os.mv[.qi.ospath .qi.path(SYMENUMPATH;`sym);.qi.ospath hdbsym];
     / move new partition into HDB
     .qi.os.ensuredir p:.qi.path(.wdb.hdb_dir;x);
     .qi.os.mv[.qi.ospath(TMPPATH;"*");p];
     / clean up empty tmp dirs and roll globals for new day
-    hdel TMPPATH;
+    hdel TMPPATH;   / @Ian
     hdel SYMENUMPATH;
     TMPPATH::gettmppath .z.d;
     SYMENUMPATH::getsymenumpath .z.d;
@@ -63,8 +62,7 @@ disksort:{[t;c;a]
 
 initsymenum:{
     .qi.os.ensuredir SYMENUMPATH;
-    hdbsym:.qi.path(.wdb.hdb_dir;`sym);
-    if[count key hdbsym;
+    if[.qi.exists hdbsym:.qi.path(.wdb.hdb_dir;`sym);
         .qi.os.cpfile[hdbsym;.qi.path(SYMENUMPATH;`sym)]];
     }
 
