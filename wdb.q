@@ -5,9 +5,6 @@
 KOE:any`keeponexit`koe in key .qi.opts
 gettmppath:{.qi.path(.qi.getconf[`tmpPath;.conf.DATA,"/tmp"];"wdb_",string[.z.i],"_",.qi.tostr[x]except".")}
 getsymenumpath:{.qi.path(.qi.getconf[`tmpPath;.conf.DATA,"/tmp"];"symenum_",string[.z.i],"_",.qi.tostr[x]except".")}
-TMPPATH:gettmppath .z.d
-SYMENUMPATH:getsymenumpath .z.d
-SYMBACKUPDIR:.qi.getconf[`symBackupDir;.conf.DATA,"/symbackups"]
 writetmp:{.[.qi.path(TMPPATH;x;`);();,;.Q.en[SYMENUMPATH]`. x]}
 clearall:{@[`.;tables`;0#]}
 writeandclear:{writetmp each t:a where 0<(count get@)each a:tables`;clearall`;.qi.info"flushed ",string[count t]," table(s) to disk"}
@@ -74,6 +71,9 @@ initsymenum:{
 
 / connect to ticker plant for (schema;(logcount;log))
 .wdb.init:{
+    TMPPATH::gettmppath .z.d;
+    SYMENUMPATH::getsymenumpath .z.d;
+    SYMBACKUPDIR::.qi.getconf[`symBackupDir;.conf.DATA,"/symbackups"];
     if[(::)~HDB::.qi.tosym .proc.self.options`hdb;
         '"A wdb process needs a hdb entry in its process config"];
     if[null .proc.self.mystack[HDB;`pkg];show .proc.self.mystack;'string[HDB]," not found"];
