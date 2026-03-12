@@ -34,18 +34,17 @@ disksort:{[t;c;a]
     writeandclear`;
     {disksort[.qi.path(TMPPATH;x;`);`sym;`p#]}each key TMPPATH;
     / backup HDB sym
-    hdbsym:.qi.path(.conf.HDB;"sym");
     bkpdir:.qi.path(SYMBACKUPDIR;string x);
     .qi.os.ensuredir bkpdir;
     .qi.info"Backing up HDB sym to: ",.qi.ospath .qi.path(bkpdir;`sym.bkp);
-    if[count key hdbsym;
+    if[.qi.exists hdbsym:.qi.path(.wdb.hdb_dir;"sym");
         .qi.os.cpfile[hdbsym;.qi.path(bkpdir;`sym.bkp)]];
     / promote working sym into HDB
     .qi.info"Promoting updated sym to HDB";
-    .qi.os.ensuredir .qi.path .conf.HDB;
+    .qi.os.ensuredir .qi.path .wdb.hdb_dir;
     .qi.os.mv[.qi.ospath .qi.path(SYMENUMPATH;`sym);.qi.ospath hdbsym];
     / move new partition into HDB
-    .qi.os.ensuredir p:.qi.path(.conf.HDB;x);
+    .qi.os.ensuredir p:.qi.path(.wdb.hdb_dir;x);
     .qi.os.mv[.qi.ospath(TMPPATH;"*");p];
     / clean up empty tmp dirs and roll globals for new day
     hdel TMPPATH;
@@ -54,9 +53,9 @@ disksort:{[t;c;a]
     SYMENUMPATH::getsymenumpath .z.d;
     initsymenum[];
     .Q.gc[];
-    $[null h:.ipc.conn HDB;
-        .qi.info "Could not connect to ",string[HDB]," to initiate reload";
-        [.qi.info "Initiating reload on ",string HDB;
+    $[null h:.ipc.conn .wdb.hdb;
+        .qi.info "Could not connect to ",string[.wdb.hdb]," to initiate reload";
+        [.qi.info "Initiating reload on ",string .wdb.hdb;
          h"reload[]"]];
     }
 
@@ -64,27 +63,26 @@ disksort:{[t;c;a]
 
 initsymenum:{
     .qi.os.ensuredir SYMENUMPATH;
-    hdbsym:.qi.path(.conf.HDB;"sym");
+    hdbsym:.qi.path(.wdb.hdb_dir;`sym);
     if[count key hdbsym;
         .qi.os.cpfile[hdbsym;.qi.path(SYMENUMPATH;`sym)]];
     }
 
 / connect to ticker plant for (schema;(logcount;log))
 .wdb.init:{
+    if[(::)~.wdb.hdb:.qi.tosym .proc.self.options`hdb;
+    '"A wdb process needs a hdb entry in its process config"];
+    .wdb.hdb_dir:.qi.path(.conf.DATA;.proc.self.stackname;`hdb;.wdb.hdb);
     TMPPATH::gettmppath .z.d;
     SYMENUMPATH::getsymenumpath .z.d;
     SYMBACKUPDIR::.qi.getconf[`symBackupDir;.conf.DATA,"/symbackups"];
-    if[(::)~HDB::.qi.tosym .proc.self.options`hdb;
-        '"A wdb process needs a hdb entry in its process config"];
-    if[null .proc.self.mystack[HDB;`pkg];show .proc.self.mystack;'string[HDB]," not found"];
+    if[null .proc.self.mystack[.wdb.hdb;`pkg];show .proc.self.mystack;'string[.wdb.hdb]," not found"];
     initsymenum[];
     .proc.subinitreplay[];
     .cron.add[`writeall;.z.p;.conf.WRITE_EVERY];
     .cron.add[`memcheck;.z.p;.conf.MEM_CHECK_EVERY];
     .event.addhandler[`.z.ts;`.cron.run];
     .cron.start[];
- }
+    }
 
-
-/
-{x set .Q.en[y;z]}[;`$":",.conf.DATA,"/HDB";]'[`$(partition,"/"),/:(string key TMPPATH),\:"/";get get TMPPATH];
+tcounts:.qi.tcounts
